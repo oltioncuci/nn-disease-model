@@ -79,7 +79,7 @@ def generate_apple_disease_data(samples_per_class=500):
 apple_df = generate_apple_disease_data(10000)
 
 # Save to CSV
-apple_df.to_csv('../apple_disease_training_data.csv', index=False)
+apple_df.to_csv('../apple_disease_test_data.csv', index=False)
 
 print("Dataset generated successfully!")
 print(apple_df['Disease_Type'].value_counts())
