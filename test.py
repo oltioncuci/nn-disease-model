@@ -12,7 +12,7 @@ import argparse
 import os
 from datetime import datetime
 
-from src.data_loader import get_data_loader
+from src.data_loader import get_data_loaders
 from src.architecture import DiseaseClassifer
 
 def main():
@@ -25,7 +25,7 @@ def main():
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    _, _, test_loader, encoder = get_data_loader(
+    _, _, test_loader, encoder = get_data_loaders(
         'data/apple/apple_disease_training_data.csv', 
         'data/apple/apple_disease_test_data.csv', 
         args.batch_size
@@ -88,7 +88,7 @@ def main():
     })
 
     for i, class_name in enumerate(encoder.classes_):
-        report_df[f'Prob_{class_name}_%'] = probs[:, i] * 100
+        report_df[f'Prob_{class_name}_%'] = all_probs_matrix[:, i] * 100
 
     csv_path = f'reports/{model_tag}_{timestamp}_detailed.csv'
     report_df.to_csv(csv_path, index=False)

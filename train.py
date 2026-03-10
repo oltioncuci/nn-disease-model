@@ -5,7 +5,9 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.data_loader import get_data_loader
+from datetime import datetime
+
+from src.data_loader import get_data_loaders
 from src.architecture import DiseaseClassifer
 
 import argparse
@@ -16,7 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description="Training Arguments")
 
     parser.add_argument('--epochs', type=int, default=50, help="Number of epochs")
-    parser.add_argument('--batch_size', type=int, default=32, help="Batch size for training")
+    parser.add_argument('--batch-size', type=int, default=32, help="Batch size for training")
     parser.add_argument('--lr', type=float,  default=0.001, help="Learning rate")
     parser.add_argument("--model-name", type=str, default='best_disease_model.pth', help="Saved Model Name")
     parser.add_argument("--patience", type=int, default=20, help="Early Stoppage")
@@ -26,11 +28,11 @@ def main():
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_loader, val_loader, test_loader, encoder = get_data_loader(
+    train_loader, val_loader, test_loader, encoder = get_data_loaders(
         'data/apple/apple_disease_training_data.csv', 'data/apple/apple_disease_test_data.csv', args.batch_size
     )
 
-    input_dim = train_loader.dataset.X.shape[1]
+    input_dim = train_loader.dataset.dataset.X.shape[1]
     hidden_dim = 32
     output_dim = len(encoder.classes_)
 
@@ -89,11 +91,9 @@ def main():
 
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
+                best_acc_at_loss = val_acc
 
-                save_path = f"models/{args.model_name.replace('.pth', '')}_acc_{val_acc:.1f}.pth"
-
-                torch.save(model.state_dict(), save_path)
-                print(f"--> Saved better model to: {save_path}")
+                best_model_state = model.state_dict().copy()
                 counter = 0
             else:
                 counter += 1
@@ -103,3 +103,14 @@ def main():
 
             if (epoch + 1) % 10 == 0:
                 print(f"Epoch [{epoch+1}] | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | Val Acc: {val_acc:.2f}%")
+
+    if best_model_state is not None:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        save_path = f"models/{args.model_name.replace('.pth', '')}_final_acc_{best_acc_at_loss:.1f}_{timestamp}.pth"
+        torch.save(best_model_state, save_path)
+        print(f"\nTraining Finished. Best model (Loss: {best_val_loss:.4f}) saved to: {save_path}")
+    else:
+        print("\nTraining ended without a valid best model state.")
+
+if __name__ == "__main__":
+    main()
