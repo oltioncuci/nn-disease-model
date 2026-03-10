@@ -105,7 +105,7 @@ def main():
                 print(f"Epoch [{epoch+1}] | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | Val Acc: {val_acc:.2f}%")
 
     if best_model_state is not None:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M:%S")
         save_path = f"models/{args.model_name.replace('.pth', '')}_final_acc_{best_acc_at_loss:.1f}_{timestamp}.pth"
         torch.save(best_model_state, save_path)
         print(f"\nTraining Finished. Best model (Loss: {best_val_loss:.4f}) saved to: {save_path}")

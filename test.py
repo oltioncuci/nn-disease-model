@@ -1,5 +1,6 @@
 import torch
-import torch.functional as F
+import torch.nn as nn
+import torch.nn.functional as F
 
 import pandas as pd
 import numpy as np
@@ -47,9 +48,11 @@ def main():
     y_true = []
     all_probs = []
 
-    with torch.zero_grad():
+    with torch.no_grad():
         for inputs, labels in test_loader:
-            inputs, outputs = inputs.to(DEVICE), model.to(DEVICE)
+            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+
+            outputs = model(inputs)
 
             probs = F.softmax(outputs, dim=1)
             all_probs.append(probs.cpu().numpy())
@@ -72,7 +75,7 @@ def main():
     plt.title('Apple Disease Classification Confusion Matrix')
     
     model_tag = os.path.basename(args.model_path).replace('.pth', '')
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M:%S")
     plt.savefig(f'figures/{model_tag}-{datetime.now().strftime(timestamp)}.png')
     plt.show()
 
