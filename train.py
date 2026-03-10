@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=32, help="Batch size for training")
     parser.add_argument('--lr', type=float,  default=0.001, help="Learning rate")
     parser.add_argument("--model-name", type=str, default='best_disease_model.pth', help="Saved Model Name")
+    parser.add_argument("--patience", type=int, default=20, help="Early Stoppage")
     # TODO LATER add Dataset
 
     args = parser.parse_args()
