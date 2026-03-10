@@ -37,7 +37,7 @@ The project is executed in two distinct phases:
 
 ### Phase 1: Training
 Run the training script with your desired hyperparameters:
-e.g. python train.py --epochs 500 --batch_size 64 --lr 0.001 --model-name apple_model.pth --patience 20
+e.g. python train.py --epochs 500 --batch-size 64 --lr 0.001 --model-name apple_model.pth --patience 20
 
 ### Phase 2: Testing
 Run the testing script by pointing it to your best-saved model:
