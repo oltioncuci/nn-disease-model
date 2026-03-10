@@ -1,5 +1,8 @@
 import torch
+import torch.functional as F
 
+import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -42,10 +45,14 @@ def main():
 
     y_pred = []
     y_true = []
+    all_probs = []
 
     with torch.zero_grad():
         for inputs, labels in test_loader:
             inputs, outputs = inputs.to(DEVICE), model.to(DEVICE)
+
+            probs = F.softmax(outputs, dim=1)
+            all_probs.append(probs.cpu().numpy())
 
             _, predicted = torch.max(outputs, 1)
 
@@ -65,11 +72,27 @@ def main():
     plt.title('Apple Disease Classification Confusion Matrix')
     
     model_tag = os.path.basename(args.model_path).replace('.pth', '')
-    plt.savefig(f'figures/{model_tag}-{datetime.now().strftime("d-m-y_H:M")}.png')
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    plt.savefig(f'figures/{model_tag}-{datetime.now().strftime(timestamp)}.png')
     plt.show()
 
+    all_probs_matrix = np.vstack(all_probs)
 
-    
+    true_names = encoder.inverse_transform(y_true)
+    pred_names = encoder.inverse_transform(y_pred)
+
+    report_df = pd.DataFrame({
+        'Actual_Disease': true_names,
+        'Predicted_Disease': pred_names,
+        'Correct': [t == p for t, p in zip(true_names, pred_names)]
+    })
+
+    for i, class_name in enumerate(encoder.classes_):
+        report_df[f'Prob_{class_name}_%'] = probs[:, i] * 100
+
+    csv_path = f'reports/{model_tag}_{timestamp}_detailed.csv'
+    report_df.to_csv(csv_path, index=False)
+    print(f"Detailed CSV Report saved.")
 
 if __name__ == "__main__":
     main()
