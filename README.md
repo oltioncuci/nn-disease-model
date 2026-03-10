@@ -1,21 +1,17 @@
-# 🍎 Apple Disease Classification System
+# 🍎 Disease Classification System
 
-A modular Deep Learning pipeline built with PyTorch to classify apple leaf diseases based on symptom data. This system features an automated training workflow with Early Stopping and a comprehensive testing suite.
+A modular Deep Learning pipeline built with PyTorch to classify crop diseases based on symptom data. This system features an automated training workflow with Early Stopping and a comprehensive testing suite.
 
 ---
 
 ## 🛠️ Installation & Setup
 
 1. **Install Dependencies**:
-   pip install torch pandas scikit-learn seaborn matplotlib
-
+   pip install -r requirements.txt
 2. **Data Placement**:
    Ensure your CSV files are in the following directory:
-   - data/apple/apple_disease_training_data.csv
-   - data/apple/apple_disease_test_data.csv
-
-3. **Folder Structure**:
-   The scripts will automatically generate models/, figures/, and reports/ folders upon execution.
+   - e.g. data/apple/apple_disease_training_data.csv
+   - e.g. data/apple/apple_disease_test_data.csv
 
 ---
 
@@ -41,11 +37,11 @@ The project is executed in two distinct phases:
 
 ### Phase 1: Training
 Run the training script with your desired hyperparameters:
-python train.py --epochs 500 --batch_size 64 --lr 0.001 --model-name apple_model.pth --patience 20
+e.g. python train.py --epochs 500 --batch_size 64 --lr 0.001 --model-name apple_model.pth --patience 20
 
 ### Phase 2: Testing
 Run the testing script by pointing it to your best-saved model:
-python test.py --model-path models/apple_model_final_acc_93.8.pth
+e.g. python test.py --model-path models/apple_model_final_acc_93.8.pth
 
 ---
 
@@ -53,7 +49,7 @@ python test.py --model-path models/apple_model_final_acc_93.8.pth
 
 - **Classification Report**: View Precision, Recall, and F1-Score in the terminal to see which diseases are most difficult for the model
 - **Figures (/figures)**: Check the generated Heatmap to see exactly which labels are being confused (e.g., if "Scab" is often mistaken for "Healthy")
-- **Reports (/reports)**: Use the CSV to perform "Ambiguity Analysis." Look for rows where the model was wrong but had high confidence (potential data noise) vs. low confidence (model uncertainty)
+- **Reports (/reports)**: Use the CSV to perform "Ambiguity Analysis." in folder /notebooks/notebook.ipynb. Look for rows where the model was wrong but had high confidence (potential data noise) vs. low confidence (model uncertainty)
 
 ---
 
