@@ -1,10 +1,16 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from src.data_loader import get_data_loader
 from src.architecture import DiseaseClassifer
 
 import argparse
+
+from sklearn.metrics import f1_score, classification_report, confusion_matrix
 
 def main():
     parser = argparse.ArgumentParser(description="Training Arguments")
@@ -32,12 +38,13 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=0)
 
-    epochs = args.epoch
+    epochs = args.epochs
     patience = 15
     best_val_loss = float('inf')
     counter = 0
 
     # Training
+    print("Starting Training")
     for epoch in range(epochs):
         model.train()
         train_loss = 0
