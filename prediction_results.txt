@@ -1,0 +1,66 @@
+
+Target: Alternaria
+------------------------------
+-> Alternaria          : 100.00%
+   Healthy             :   0.00%
+   Fire Blight         :   0.00%
+   Apple Scab          :   0.00%
+   Cedar Apple Rust    :   0.00%
+   Powdery Mildew      :   0.00%
+
+==============================
+
+Target: Apple Scab
+------------------------------
+-> Apple Scab          :  99.74%
+   Cedar Apple Rust    :   0.26%
+   Healthy             :   0.00%
+   Fire Blight         :   0.00%
+   Alternaria          :   0.00%
+   Powdery Mildew      :   0.00%
+
+==============================
+
+Target: Cedar Apple Rust
+------------------------------
+-> Fire Blight         :  95.77%
+   Apple Scab          :   3.53%
+   Healthy             :   0.70%
+   Alternaria          :   0.00%
+   Cedar Apple Rust    :   0.00%
+   Powdery Mildew      :   0.00%
+
+==============================
+
+Target: Fire Blight
+------------------------------
+-> Healthy             : 100.00%
+   Alternaria          :   0.00%
+   Fire Blight         :   0.00%
+   Powdery Mildew      :   0.00%
+   Apple Scab          :   0.00%
+   Cedar Apple Rust    :   0.00%
+
+==============================
+
+Target: Prob_Powdery Mildew
+------------------------------
+-> Healthy             : 100.00%
+   Powdery Mildew      :   0.00%
+   Alternaria          :   0.00%
+   Fire Blight         :   0.00%
+   Apple Scab          :   0.00%
+   Cedar Apple Rust    :   0.00%
+
+==============================
+
+Target: Healthy
+------------------------------
+-> Healthy             :  60.26%
+   Powdery Mildew      :  39.74%
+   Apple Scab          :   0.00%
+   Alternaria          :   0.00%
+   Fire Blight         :   0.00%
+   Cedar Apple Rust    :   0.00%
+
+==============================

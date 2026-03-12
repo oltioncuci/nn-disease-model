@@ -29,8 +29,8 @@ def main():
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     _, _, test_loader, encoder = get_data_loaders(
-        'data/apple/apple_disease_training_data.csv', 
-        'data/apple/apple_disease_test_data.csv', 
+        'data/apple/apple_disease_realistic_data.csv', 
+        'data/apple/apple_disease_realistic_data_test.csv', 
         args.batch_size
     )
 
@@ -122,46 +122,12 @@ def main():
         "plt.xticks(rotation=45)\n"
         "plt.show()"
     )
-    image_display_code = (
-        "import matplotlib.pyplot as plt\n"
-        "import matplotlib.image as mpimg\n"
-        "import os\n"
-        "import glob\n\n"
-        "# Model tag from your test.py run\n"
-        "model_tag = 'best_disease_model_final_acc_92.6_2026-03-10_16-28-07'\n"
-        "figures_path = '../figures'\n"
-        "\n"
-        "# Try to find the figure with this model tag\n"
-        "expected_pattern = os.path.join(figures_path, f'{model_tag}-figure.png')\n"
-        "matching_files = glob.glob(expected_pattern)\n"
-        "\n"
-        "if matching_files:\n"
-        "    img_path = matching_files[0]\n"
-        "    img = mpimg.imread(img_path)\n"
-        "    plt.figure(figsize=(12, 10))\n"
-        "    plt.imshow(img)\n"
-        "    plt.axis('off')\n"
-        "    plt.title(f'Confusion Matrix: {os.path.basename(img_path)}', fontsize=14, pad=20)\n"
-        "    plt.tight_layout()\n"
-        "    plt.show()\n"
-        "    print(f'✓ Displaying: {os.path.basename(img_path)}')\n"
-        "else:\n"
-        "    print(f'✗ No figure found matching: {expected_pattern}')\n"
-        "    print('\\nAvailable figures:')\n"
-        "    if os.path.exists(figures_path):\n"
-        "        for f in os.listdir(figures_path):\n"
-        "            if f.endswith('.png'):\n"
-        "                print(f'  - {f}')\n"
-        "    else:\n"
-        "        print(f'Figures folder not found at: {figures_path}')\n"
-    )
 
     nb['cells'] = [
         nbf.v4.new_markdown_cell(header_text),
         nbf.v4.new_code_cell(import_code),
         nbf.v4.new_code_cell(load_code),
         nbf.v4.new_code_cell(analysis_code),
-        nbf.v4.new_code_cell(image_display_code)
     ]
 
     notebook_filename = f'notebooks/{model_tag}_analysis.ipynb'

@@ -7,20 +7,25 @@ import torch.functional as F
 
 
 class DiseaseClassifer(nn.Module):
-    def __init__(self, input_size,  num_classes, hidden_size=32, dropout_rate=0):
+    def __init__(self, input_size,  num_classes, hidden_size=32, dropout_rate=0.2):
         super(DiseaseClassifer, self).__init__()
 
         self.network = nn.Sequential(
             # LAYER 1
-            nn.Linear(input_size, hidden_size),
+            nn.Linear(input_size, 128),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_rate),
+
+            # LAYER 2
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(p=dropout_rate),
+
+            nn.Linear(64, 32),
             nn.ReLU(),
 
-            # Layer 2
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-
-            # OUTPUT LAYER
-            nn.Linear(hidden_size, num_classes)
+            # Output Layer
+            nn.Linear(32, num_classes)
         )
 
     def forward(self, x):
