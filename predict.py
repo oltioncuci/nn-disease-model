@@ -2,107 +2,92 @@ import torch
 import joblib
 import pandas as pd
 import numpy as np
-from src.architecture import DiseaseClassifer
+import os
+from src.architecture import GrowthClassifer
 
-def predict(input_data, model_path="models/nn_1_final_acc_97.8_2026-03-12_09-50-50.pth"):
+def predict_growth(weather_data, model_path="models/growth_model_best.pth", hidden_size=64):
+    """
+    Takes weather conditions and returns growth probabilities for all species.
+    """
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # 1. Load Scaler (Ensure this was saved during training)
     scaler = joblib.load("utils/scaler.joblib")
-    encoder = joblib.load("utils/encoder.joblib")
+    
+    # 2. Define Species Names (Must match training order)
+    mushroom_species = ['Porcini', 'Chanterelle']
+    
+    # 3. Initialize & Load Model
+    # input_dim should be 11 (the features we defined in the generator)
+    input_dim = scaler.n_features_in_ 
+    output_dim = len(mushroom_species)
+    
+    model = GrowthClassifer(input_size=input_dim, hidden_size=hidden_size, num_classes=output_dim)
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE, weights_only=True))
+    model.to(DEVICE).eval()
 
-    input_dim = scaler.n_features_in_
-    output_dim = len(encoder.classes_)
-
-    model = DiseaseClassifer(input_size=input_dim, num_classes=output_dim)
-    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
-    model.to(DEVICE)
-    model.eval()
-
-    if isinstance(input_data, (dict, list)):
-        df = pd.DataFrame(input_data)
+    # 4. Process Input Data
+    if isinstance(weather_data, dict):
+        df = pd.DataFrame(weather_data)
     else:
-        df = input_data
+        df = weather_data.copy()
 
-    #actual_labels = df['Disease_Type'].values
-    X = df.drop(columns=['Disease_Type'])
-
+    # 5. Feature Selection (Ordering MUST match the 11 columns in the generator)
+    feature_cols = [
+        'air_temp_day', 'air_temp_night', 'soil_temp', 'air_humidity', 
+        'soil_moisture', 'wind_speed', 'rain_cumulative_7d', 
+        'rain_days_in_window', 'hours_above_28c', 'consecutive_moist_days', 
+        'is_peak_season'
+    ]
+    
+    X = df[feature_cols]
+    
+    # 6. Inference
     X_scaled = scaler.transform(X.values)
     X_tensor = torch.tensor(X_scaled, dtype=torch.float32).to(DEVICE)
 
     with torch.no_grad():
-        outputs = model(X_tensor)
-        probs = torch.softmax(outputs, dim=1)
-        conf, preds = torch.max(probs, dim=1)
-
-    class_names = encoder.classes_
-    batch_results = []
-    for i in range(len(df)):
-        sample_probs = probs[i].cpu().numpy()
-        # Create a dictionary of {DiseaseName: Probability}
-        prob_map = {class_names[j]: sample_probs[j] for j in range(len(class_names))}
-        # Sort it so the highest confidence is at the top
-        sorted_probs = dict(sorted(prob_map.items(), key=lambda item: item[1], reverse=True))
-        
-        batch_results.append({
-            'actual': df['Disease_Type'].iloc[i],
-            'predictions': sorted_probs
-        })
+        outputs = model(X_tensor) # Shape: [N, 2]
     
-    return batch_results
+    # Convert from 0-1 to 0-100%
+    growth_scores = outputs.cpu().numpy() * 100
+    
+    results = []
+    for i in range(len(df)):
+        # Create a dictionary of results for each row
+        prediction_map = {
+            mushroom_species[j]: round(float(growth_scores[i][j]), 2) 
+            for j in range(output_dim)
+        }
+        results.append(prediction_map)
+    
+    return results
 
 if __name__ == "__main__":
+    # Sample "Current Sensor Data"
+    # Row 1: Perfect Porcini conditions | Row 2: Too hot/dry
+    current_sensors = {
+    # Location 1: "Muggy Summer" (Chanterelle Thrives, Porcini Suppressed)
+    # Location 2: "Crisp Autumn" (Porcini Thrives, Chanterelle Suppressed)
+    'air_temp_day': [29.5, 14.5],           
+    'air_temp_night': [19.0, 9.5],         
+    'soil_temp': [22.0, 13.0],              
+    'air_humidity': [92.0, 82.0],           
+    'soil_moisture': [80.0, 72.0],          
+    'wind_speed': [0.5, 1.0],               
+    'rain_cumulative_7d': [35.0, 22.0],     
+    'rain_days_in_window': [5, 4],          
+    'hours_above_28c': [6, 0],              
+    'consecutive_moist_days': [8, 7],      
+    'is_peak_season': [1, 1]                
+}
 
-    # alternaria_data = {
-    #     'Month': [7], 
-    #     'Temperature_C': [28.5], 
-    #     'Humidity_PRC': [88], 
-    #     'Leaf_Wetness_Hr': [12], 
-    #     'Rainfall_mm': [4.2], 
-    #     'Wind_Speed_ms': [1.2], 
-    #     'UV_Index': [8], 
-    #     'Light_Intensity_Lux': [48000], 
-    # }
+    predictions = predict_growth(current_sensors)
+
+    print("\n" + "="*40)
+    print(f"{'SITE':<10} | {'PORCINI %':<12} | {'CHANTERELLE %':<12}")
+    print("-" * 40)
     
-    # disease, confidence = predict(alternaria_data)
-    # print(f"Prediction: {disease} ({confidence.item()*100:.2f}%)")
-
-    sample_data = {
-        'Month': [7, 5, 5, 6, 7, 6], 
-        'Temperature_C': [28, 18, 22, 25, 24, 22], 
-        'Humidity_PRC': [85, 90, 80, 70, 65, 50], 
-        'Leaf_Wetness_Hr': [10, 14, 8, 4, 2, 0], 
-        'Rainfall_mm': [5, 12, 8, 2, 0, 0], 
-        'Wind_Speed_ms': [1.5, 2.5, 3.0, 4.5, 2.0, 2.5], 
-        'UV_Index': [8, 4, 5, 7, 9, 6], 
-        'Light_Intensity_Lux': [45000, 20000, 30000, 40000, 50000, 35000], 
-        'Disease_Type': [
-            'Alternaria', 
-            'Apple Scab', 
-            'Cedar Apple Rust', 
-            'Fire Blight', 
-            'Prob_Powdery Mildew', 
-            'Healthy'
-        ]
-    }
-
-    results = predict(sample_data)
-
-    output_file = "prediction_results.txt"
-
-    with open(output_file, "w") as f:
-        for res in results:
-            # We use f.write instead of print
-            f.write(f"\nTarget: {res['actual']}\n")
-            f.write("-" * 30 + "\n")
-            
-            for disease, conf in res['predictions'].items():
-                # Highlight the top prediction
-                keys = list(res['predictions'].keys())
-                prefix = "-> " if disease == keys[0] else "   "
-                
-                line = f"{prefix}{disease:<20}: {conf*100:>6.2f}%\n"
-                f.write(line)
-            
-            f.write("\n" + "="*30 + "\n")
-
-    print(f"Results successfully saved to {output_file}")
+    for i, res in enumerate(predictions):
+        print(f"Location {i+1:<2} | {res['Porcini']:>10}% | {res['Chanterelle']:>12}%")
+    print("="*40)

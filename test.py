@@ -1,141 +1,118 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-import nbformat as nbf
-
-from sklearn.metrics import confusion_matrix, classification_report
-
 import argparse
 import os
-from datetime import datetime
 
 from src.data_loader import get_data_loaders
-from src.architecture import DiseaseClassifer
+from src.architecture import GrowthClassifer
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate the trained model")
-
-    parser.add_argument("--model-path", type=str, required=True, help="Path to model")
+    parser = argparse.ArgumentParser(description="Evaluate the trained Multi-Target model")
+    parser.add_argument("--model-path", type=str, required=True, help="Path to best_model.pth")
     parser.add_argument("--batch-size", type=int, default=32)
-
+    parser.add_argument("--hidden-size", type=int, default=64)
     args = parser.parse_args()
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Testing on: {DEVICE}")
 
-    _, _, test_loader, encoder = get_data_loaders(
-        'data/apple/apple_disease_realistic_data.csv', 
-        'data/apple/apple_disease_realistic_data_test.csv', 
+    # 1. Load Data
+    test_loader, _, _ = get_data_loaders(
+        'data/mushrooms/scripts/balanced_mushroom_growth_dataset_test.csv',
+        'data/mushrooms/scripts/balanced_mushroom_growth_dataset_test.csv',
         args.batch_size
     )
 
-    sample_x, _ = test_loader.dataset[0]
-    input_dim = sample_x.shape[0]
-    output_dim = len(encoder.classes_)
-    
-    model = DiseaseClassifer(input_size=input_dim, hidden_size=32, num_classes=output_dim).to(DEVICE)
+    # 2. Setup Architecture
+    input_dim = test_loader.dataset.X.shape[1]
+    output_dim = test_loader.dataset.y.shape[1]
+    mushroom_names = ['Porcini', 'Chanterelle'] # Defined based on your target columns
 
+    model = GrowthClassifer(
+        input_size=input_dim, 
+        hidden_size=args.hidden_size, 
+        num_classes=output_dim
+    ).to(DEVICE)
+
+    # Load Weights
     model.load_state_dict(torch.load(args.model_path, map_location=DEVICE))
-
-    # Testing
-    print("Starting Testing...")
     model.eval()
 
-    y_pred = []
-    y_true = []
-    all_probs = []
+    all_preds = []
+    all_trues = []
 
+    # 3. Inference Loop
+    print(f"Processing {len(test_loader.dataset)} test samples...")
     with torch.no_grad():
         for inputs, labels in test_loader:
-            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
-
+            # Ensure Float32 to match model weights
+            inputs, labels = inputs.to(DEVICE).float(), labels.to(DEVICE).float()
             outputs = model(inputs)
 
-            probs = F.softmax(outputs, dim=1)
-            all_probs.append(probs.cpu().numpy())
+            all_preds.append(outputs.cpu().numpy())
+            all_trues.append(labels.cpu().numpy())
 
-            _, predicted = torch.max(outputs, 1)
+    y_pred_raw = np.vstack(all_preds)
+    y_true_raw = np.vstack(all_trues)
 
-            y_pred.extend(predicted.cpu().numpy())
-            y_true.extend(labels.cpu().numpy())
+    # 4. Evaluation Logic (Cleaned up - No Masking)
+    report_data = []
+    per_species_errors = {name: [] for name in mushroom_names}
 
-    print("\n--- Classification Report ---")
-    print(classification_report(y_true, y_pred, target_names=encoder.classes_))
+    # Iterate through samples and species
+    for i in range(len(y_true_raw)):
+        for idx, species_name in enumerate(mushroom_names):
+            actual = y_true_raw[i, idx] * 100
+            pred = y_pred_raw[i, idx] * 100
+            error = abs(actual - pred)
+            
+            per_species_errors[species_name].append(error)
+            
+            report_data.append({
+                'Mushroom_Type': species_name,
+                'Actual_Score': round(actual, 2),
+                'Predicted_Score': round(pred, 2),
+                'Error_Margin': round(error, 2)
+            })
 
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=encoder.classes_, 
-                yticklabels=encoder.classes_)
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.title('Apple Disease Classification Confusion Matrix')
+    # 5. Summary Report
+    print("\n" + "="*45)
+    print(f"{'Mushroom Type':<20} | {'MAE (%)':<10}")
+    print("-" * 45)
     
-    model_tag = os.path.basename(args.model_path).replace('.pth', '')
-    figure_name = f"{model_tag}-figure.png"
-    plt.savefig(f'figures/{figure_name}')
+    overall_errors = []
+    for name in mushroom_names:
+        avg_err = np.mean(per_species_errors[name])
+        overall_errors.append(avg_err)
+        print(f"{name:<20} | {avg_err:>8.2f}%")
+    
+    print("-" * 45)
+    print(f"{'OVERALL SYSTEM MAE':<20} | {np.mean(overall_errors):>8.2f}%")
+    print("="*45)
+
+    # 6. Visualization
+    report_df = pd.DataFrame(report_data)
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=report_df, x='Actual_Score', y='Predicted_Score', hue='Mushroom_Type', alpha=0.4)
+    
+    plt.plot([0, 100], [0, 100], color='red', linestyle='--', label='Perfect Prediction')
+    plt.title('Multi-Target Model: Actual vs Predicted Growth')
+    plt.xlabel('Actual Growth Score (%)')
+    plt.ylabel('Predicted Growth Score (%)')
+    plt.grid(True, alpha=0.3)
+    
+    os.makedirs('figures', exist_ok=True)
+    plt.savefig('figures/test_performance_scatter.png')
     plt.show()
 
-    all_probs_matrix = np.vstack(all_probs)
-
-    true_names = encoder.inverse_transform(y_true)
-    pred_names = encoder.inverse_transform(y_pred)
-
-    report_df = pd.DataFrame({
-        'Actual_Disease': true_names,
-        'Predicted_Disease': pred_names,
-        'Correct': [t == p for t, p in zip(true_names, pred_names)]
-    })
-
-    for i, class_name in enumerate(encoder.classes_):
-        report_df[f'Prob_{class_name}_%'] = all_probs_matrix[:, i] * 100
-
-    csv_filename = f"{model_tag}_detailed.csv"
-    csv_path = f"reports/{csv_filename}"
-    report_df.to_csv(csv_path, index=False)
-    print(report_df.head())
-    print(f"Detailed CSV Report saved in {csv_path}.")
-
-    os.makedirs('figures', exist_ok=True)
+    # 7. Save Detailed CSV
     os.makedirs('reports', exist_ok=True)
-    os.makedirs('notebooks', exist_ok=True)
-
-    nb = nbf.v4.new_notebook()
-
-    header_text = f"# Model Evaluation EDA\n**Source Report:** `{csv_path}`\n**Generated on:** {datetime.now().strftime('%Y-%m-%d %H-%M')}"
-    
-    import_code = "import pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n%matplotlib inline\nsns.set_theme(style='whitegrid')"
-
-    load_code = f"df = pd.read_csv('../{csv_path}')\ndf.head()"
-
-    analysis_code = (
-        "print('--- Accuracy Overview ---')\n"
-        "print(df['Correct'].value_counts(normalize=True))\n\n"
-        "plt.figure(figsize=(10, 6))\n"
-        "sns.countplot(data=df, x='Actual_Disease', hue='Correct')\n"
-        "plt.title('Correct vs Incorrect Predictions per Class')\n"
-        "plt.xticks(rotation=45)\n"
-        "plt.show()"
-    )
-
-    nb['cells'] = [
-        nbf.v4.new_markdown_cell(header_text),
-        nbf.v4.new_code_cell(import_code),
-        nbf.v4.new_code_cell(load_code),
-        nbf.v4.new_code_cell(analysis_code),
-    ]
-
-    notebook_filename = f'notebooks/{model_tag}_analysis.ipynb'
-    with open(notebook_filename, 'w', encoding='utf-8') as f:
-        nbf.write(nb, f)
-
-    print(f"✅ Success! Notebook generated: {notebook_filename}")
-
+    report_df.to_csv("reports/test_detailed_results.csv", index=False)
+    print(f"Results saved to reports/test_detailed_results.csv")
 
 if __name__ == "__main__":
     main()
