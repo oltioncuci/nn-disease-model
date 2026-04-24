@@ -29,8 +29,8 @@ def main():
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     _, _, test_loader, encoder = get_data_loaders(
-        'data/apple/apple_disease_realistic_data.csv', 
-        'data/apple/apple_disease_realistic_data_test.csv', 
+        #'data/grape/scripts/grape_disease_kosovo_data.csv', 
+        #'data/grape/scripts/grape_disease_kosovo_data_test.csv', 
         args.batch_size
     )
 

@@ -1,65 +1,50 @@
-# 🍎 Disease Classification System
-
-A modular Deep Learning pipeline built with PyTorch to classify crop diseases based on symptom data. This system features an automated training workflow with Early Stopping and a comprehensive testing suite.
-
----
-
-## 🛠️ Installation & Setup
-
-1. **Install Dependencies**:
-   pip install -r requirements.txt
-2. **Data Placement**:
-   Ensure your CSV files are in the following directory:
-   - e.g. data/apple/apple_disease_training_data.csv
-   - e.g. data/apple/apple_disease_test_data.csv
-
----
-
-## 🔄 Project Workflow
-
-The project is executed in two distinct phases:
-
-### Training Phase (train.py):
-- Loads and splits data into Training and Validation sets
-- Trains the Neural Network (src/architecture.py) using the Adam optimizer
-- Monitors Validation Loss; if no improvement occurs within the "patience" window, Early Stopping triggers
-- Only the best model weights (lowest validation loss) are saved to disk after the session ends
-
-### Testing Phase (test.py):
-- Loads the saved .pth model weights
-- Evaluates performance on the hold-out test set
-- Generates a Confusion Matrix (Heatmap) to visualize misclassifications
-- Exports a Detailed Probability Report (CSV) showing the confidence score for every disease class
-
----
-
-## 🚀 Execution Commands
-
-### Phase 1: Training
-Run the training script with your desired hyperparameters:
-e.g. python train.py --epochs 500 --batch-size 64 --lr 0.001 --model-name apple_model.pth --patience 20
-
-### Phase 2: Testing
-Run the testing script by pointing it to your best-saved model:
-e.g. python test.py --model-path models/apple_model_final_acc_93.8.pth
-
----
-
-## 📈 Analysis & Outputs
-
-- **Classification Report**: View Precision, Recall, and F1-Score in the terminal to see which diseases are most difficult for the model
-- **Figures (/figures)**: Check the generated Heatmap to see exactly which labels are being confused (e.g., if "Scab" is often mistaken for "Healthy")
-- **Reports (/reports)**: Use the CSV to perform "Ambiguity Analysis." in folder /notebooks/notebook.ipynb. Look for rows where the model was wrong but had high confidence (potential data noise) vs. low confidence (model uncertainty)
-
----
-
-## ⚙️ Configuration (Arguments)
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| --epochs | Max training iterations | 50 |
-| --batch_size | Number of samples per batch | 32 |
-| --lr | Learning rate for Adam Optimizer | 0.001 |
-| --patience | Epochs to wait before Early Stopping | 20 |
-| --model-name | (Training) Name for saved model file | apple_model.pth |
-| --model-path | (Testing) Path to saved .pth file | REQUIRED |
+    # test_scenarios = [
+    #     {"name": "🌟 SCENARIO: Optimal", "msg": "Target: 85-100", "data": {"month": 10, "air_temp_day_avg": 18.5, "air_temp_night_avg": 14.0, "soil_temp_avg": 17.5, "soil_moisture_avg": 70.0, "air_humidity_avg": 90.0, "wind_speed_avg": 1.5, "rainfall_3d_total": 15.0, "rainfall_7d_total": 25.0, "rain_days_7d": 5, "max_daily_rain_7d": 8.0}},
+    #     {"name": "🔥 SCENARIO: Heat", "msg": "Target: Porcini crash", "data": {"month": 7, "air_temp_day_avg": 31.0, "air_temp_night_avg": 20.0, "soil_temp_avg": 25.5, "soil_moisture_avg": 55.0, "air_humidity_avg": 60.0, "wind_speed_avg": 4.0, "rainfall_3d_total": 10.0, "rainfall_7d_total": 30.0, "rain_days_7d": 3, "max_daily_rain_7d": 15.0}},
+    #     {"name": "🌊 SCENARIO: Saturation", "msg": "Target: Porcini drop", "data": {"month": 9, "air_temp_day_avg": 17.0, "air_temp_night_avg": 13.0, "soil_temp_avg": 16.0, "soil_moisture_avg": 92.0, "air_humidity_avg": 95.0, "wind_speed_avg": 1.0, "rainfall_3d_total": 40.0, "rainfall_7d_total": 65.0, "rain_days_7d": 6, "max_daily_rain_7d": 20.0}},
+    #     {"name": "❄️ SCENARIO: Cold", "msg": "Target: Both < 15", "data": {"month": 11, "air_temp_day_avg": 11.5, "air_temp_night_avg": 6.0, "soil_temp_avg": 10.5, "soil_moisture_avg": 35.0, "air_humidity_avg": 50.0, "wind_speed_avg": 3.5, "rainfall_3d_total": 0.0, "rainfall_7d_total": 5.0, "rain_days_7d": 1, "max_daily_rain_7d": 5.0}},
+    #     {"name": "🍄 CASE 1: Porcini High", "msg": "Target: Porcini Sweet spot", "data": {"month": 10, "air_temp_day_avg": 16.0, "air_temp_night_avg": 12.0, "soil_temp_avg": 15.0, "soil_moisture_avg": 70.0, "air_humidity_avg": 92.0, "wind_speed_avg": 1.2, "rainfall_3d_total": 15.0, "rainfall_7d_total": 22.0, "rain_days_7d": 5, "max_daily_rain_7d": 6.0}},
+    #     {"name": "💨 SCENARIO: Wind", "msg": "Target: Desiccation", "data": {"month": 6, "air_temp_day_avg": 20.0, "air_temp_night_avg": 14.0, "soil_temp_avg": 18.0, "soil_moisture_avg": 65.0, "air_humidity_avg": 70.0, "wind_speed_avg": 8.0, "rainfall_3d_total": 12.0, "rainfall_7d_total": 20.0, "rain_days_7d": 4, "max_daily_rain_7d": 7.0}}
+    # ]
+#     test_scenarios = [
+#     {
+#         "name": "❄️ THE COLD SURVIVOR",
+#         "desc": "Late Oct: 12°C. Below Porcini floor, but Chanterelle 'might' still fruit.",
+#         "data": {
+#             "month": 10, "air_temp_day_avg": 12.0, "air_temp_night_avg": 7.0,
+#             "soil_temp_avg": 11.0, "soil_moisture_avg": 75.0, "air_humidity_avg": 85.0,
+#             "wind_speed_avg": 2.0, "rainfall_3d_total": 10.0, "rainfall_7d_total": 20.0,
+#             "rain_days_7d": 3, "max_daily_rain_7d": 10.0
+#         }
+#     },
+#     {
+#         "name": "🔥 THE SUMMER SHRIVEL",
+#         "desc": "Hot July: 27°C. Chanterelles shrivel in heat; Porcini might hold on slightly longer.",
+#         "data": {
+#             "month": 7, "air_temp_day_avg": 27.0, "air_temp_night_avg": 19.0,
+#             "soil_temp_avg": 22.0, "soil_moisture_avg": 55.0, "air_humidity_avg": 60.0,
+#             "wind_speed_avg": 4.0, "rainfall_3d_total": 2.0, "rainfall_7d_total": 5.0,
+#             "rain_days_7d": 1, "max_daily_rain_7d": 5.0
+#         }
+#     },
+#     {
+#         "name": "🌊 THE DROWNED FOREST",
+#         "desc": "Massive Flooding: 90mm rain. Soil saturation is too high for Porcini.",
+#         "data": {
+#             "month": 9, "air_temp_day_avg": 18.0, "air_temp_night_avg": 12.0,
+#             "soil_temp_avg": 16.0, "soil_moisture_avg": 98.0, "air_humidity_avg": 95.0,
+#             "wind_speed_avg": 1.0, "rainfall_3d_total": 60.0, "rainfall_7d_total": 95.0,
+#             "rain_days_7d": 5, "max_daily_rain_7d": 50.0
+#         }
+#     },
+#     {
+#         "name": "🌵 THE FALSE AUTUMN",
+#         "desc": "Perfect temp (18°C) but 0 rain for 7 days. Score should be near 0.",
+#         "data": {
+#             "month": 9, "air_temp_day_avg": 18.0, "air_temp_night_avg": 11.0,
+#             "soil_temp_avg": 15.0, "soil_moisture_avg": 30.0, "air_humidity_avg": 45.0,
+#             "wind_speed_avg": 3.0, "rainfall_3d_total": 0.0, "rainfall_7d_total": 0.0,
+#             "rain_days_7d": 0, "max_daily_rain_7d": 0.0
+#         }
+#     }
+# ]

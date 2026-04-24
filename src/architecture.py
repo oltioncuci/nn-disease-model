@@ -6,32 +6,27 @@ import torch.functional as F
 # TODO LATER nn.Dropout(dropout_rate)
 
 
-class DiseaseClassifer(nn.Module):
+class GrowthRegressor(nn.Module):
     def __init__(self, input_size,  num_classes, hidden_size=32, dropout_rate=0.2):
-        super(DiseaseClassifer, self).__init__()
+        super(GrowthRegressor, self).__init__()
 
-        self.network = nn.Sequential(
-            # LAYER 1
-            nn.Linear(input_size, 128),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_rate),
-
-            # LAYER 2
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Dropout(p=dropout_rate),
-
+        self.net = nn.Sequential(
+            nn.Linear(input_size, 32),
+            nn.LeakyReLU(0.1),
+            nn.Linear(32, 64),
+            nn.LeakyReLU(0.1),
             nn.Linear(64, 32),
-            nn.ReLU(),
-
-            # Output Layer
-            nn.Linear(32, num_classes)
+            nn.LeakyReLU(0.1),
+            nn.Linear(32, 2), 
+            nn.Sigmoid()
         )
 
+
     def forward(self, x):
-        return self.network(x)
+        x = self.net(x)
+        return x
 
     def get_model(input_dim, output_dim, device):
-        model = DiseaseClassifer(input_size=input_dim, num_classes=output_dim)
+        model = GrowthRegressor(input_size=input_dim, num_classes=output_dim)
 
         return model.to(device)
